@@ -41,6 +41,23 @@ Skill や Agent、settings.json を新規作成・変更するときは、先に
 
 定義: `.claude/agents/analyzer.md` / `.claude/agents/builder.md` / `.claude/agents/reviewer.md`
 
+### code-reviewer
+単発・パイプライン外のコード品質レビュー（セキュリティ → バグ → スタイルの順で指摘、修正はしない読み取り専用）。
+パイプラインの完成判定には reviewer を使い、こちらは使わない。
+
+定義: `.claude/agents/code-reviewer.md`
+
+### doc-generator
+コードを解析して README・docstring・API 仕様などのドキュメント内容を生成する読み取り専用エージェント。
+ファイルには書き込まないため、生成結果の反映は builder か手動で行う。
+
+定義: `.claude/agents/doc-generator.md`
+
+### test-runner
+テストフレームワークを検出してテストを実行し、失敗の根本原因を診断・報告するエージェント（ソースの修正はしない）。
+
+定義: `.claude/agents/test-runner.md`
+
 ## 運用ルール
 
 - 新しいスラッシュコマンドは `.claude/commands/`（非推奨）ではなく `.claude/skills/<name>/SKILL.md` に作成する

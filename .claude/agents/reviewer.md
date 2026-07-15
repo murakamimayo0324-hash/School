@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: パイプラインの第3段階（最終）。Analyzer の分析レポートと Builder の実装結果を突き合わせてレビューし、「完成」または「差し戻し（修正指示付き）」を判定する。レビューのみで、ファイルの作成・編集は行わない。
+description: パイプラインの第3段階（最終）。Analyzer の分析レポートと Builder の実装結果を突き合わせてレビューし、「完成」または「差し戻し（修正指示付き）」を判定する。パイプライン専用（単発のコードレビューは code-reviewer を使う）。レビューのみで、ファイルの作成・編集は行わない。
 tools: Read, Grep, Glob, Bash
 model: inherit
 ---
