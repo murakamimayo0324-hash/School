@@ -24,6 +24,13 @@ Claude Code のプロジェクト設定（Skills / Agents / Settings）を管理
 
 定義: `.claude/skills/summarize-file/SKILL.md`
 
+### /build-and-review
+実装タスクを Analyzer → Builder → Reviewer のパイプラインで順次実行する（差し戻しは最大 2 回）。
+
+使い方: `/build-and-review <タスクの説明>`（例: `/build-and-review 電卓スクリプトにべき乗機能を追加`）
+
+定義: `.claude/skills/build-and-review/SKILL.md`
+
 ## 利用できる Agent
 
 ### claude-code-guide
