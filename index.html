@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ストップウォッチ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      letter-spacing: 0.05em;
+    }
+    .display {
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(2.5rem, 12vw, 5rem);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 2rem;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1rem 2rem;
+      border-radius: 1rem;
+      min-width: 320px;
+      text-align: center;
+    }
+    .display .ms { color: #38bdf8; }
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+    button {
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      color: #fff;
+      transition: transform 0.08s ease, opacity 0.2s ease;
+      min-width: 90px;
+    }
+    button:active { transform: scale(0.96); }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #startStop { background: #22c55e; }
+    #startStop.running { background: #ef4444; }
+    #lap { background: #3b82f6; }
+    #reset { background: #64748b; }
+    .laps-wrap {
+      width: 100%;
+      max-width: 420px;
+    }
+    .laps-wrap h2 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      color: #94a3b8;
+    }
+    #laps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    #laps li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.6rem 1rem;
+      border-radius: 0.5rem;
+      font-variant-numeric: tabular-nums;
+    }
+    #laps li .lap-no { color: #94a3b8; font-size: 0.9rem; }
+    #laps li .lap-time { font-weight: 600; }
+    .empty { color: #64748b; font-size: 0.9rem; padding: 0.6rem 0; }
+  </style>
+</head>
+<body>
+  <h1>⏱ ストップウォッチ</h1>
+
+  <div class="display" id="display">00:00.000</div>
+
+  <div class="controls">
+    <button id="startStop">スタート</button>
+    <button id="lap" disabled>ラップ</button>
+    <button id="reset" disabled>リセット</button>
+  </div>
+
+  <div class="laps-wrap">
+    <h2>ラップ記録</h2>
+    <ul id="laps">
+      <li class="empty" id="emptyMsg">まだ記録がありません</li>
+    </ul>
+  </div>
+
+  <script>
+    (function () {
+      var display   = document.getElementById('display');
+      var startStop = document.getElementById('startStop');
+      var lapBtn    = document.getElementById('lap');
+      var resetBtn  = document.getElementById('reset');
+      var lapsList  = document.getElementById('laps');
+      var emptyMsg  = document.getElementById('emptyMsg');
+
+      var running       = false;
+      var startTime     = 0;   // 直近スタート時刻 (performance.now)
+      var elapsedBefore = 0;   // 一時停止までに蓄積した経過時間(ms)
+      var rafId         = null;
+      var lapCount      = 0;
+
+      // 経過ミリ秒 → "分:秒.ミリ秒" 形式
+      function format(ms) {
+        var totalMs      = Math.floor(ms);
+        var minutes      = Math.floor(totalMs / 60000);
+        var seconds      = Math.floor((totalMs % 60000) / 1000);
+        var milliseconds = totalMs % 1000;
+        var mm  = String(minutes).padStart(2, '0');
+        var ss  = String(seconds).padStart(2, '0');
+        var mmm = String(milliseconds).padStart(3, '0');
+        return { text: mm + ':' + ss + '.' + mmm, mm: mm, ss: ss, mmm: mmm };
+      }
+
+      function currentElapsed() {
+        return elapsedBefore + (running ? (performance.now() - startTime) : 0);
+      }
+
+      function render() {
+        var f = format(currentElapsed());
+        display.innerHTML = f.mm + ':' + f.ss + '.<span class="ms">' + f.mmm + '</span>';
+      }
+
+      function tick() {
+        render();
+        rafId = requestAnimationFrame(tick);
+      }
+
+      function start() {
+        running = true;
+        startTime = performance.now();
+        startStop.textContent = 'ストップ';
+        startStop.classList.add('running');
+        lapBtn.disabled = false;
+        resetBtn.disabled = false;
+        tick();
+      }
+
+      function stop() {
+        elapsedBefore = currentElapsed(); // running中に経過時間を確定させる
+        running = false;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        startStop.textContent = 'スタート';
+        startStop.classList.remove('running');
+        render();
+      }
+
+      function reset() {
+        running = false;
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        elapsedBefore = 0;
+        startTime = 0;
+        lapCount = 0;
+        startStop.textContent = 'スタート';
+        startStop.classList.remove('running');
+        lapBtn.disabled = true;
+        resetBtn.disabled = true;
+        render();
+        // ラップ記録をクリア
+        lapsList.innerHTML = '';
+        lapsList.appendChild(emptyMsg);
+      }
+
+      function recordLap() {
+        var f = format(currentElapsed());
+        lapCount++;
+        if (emptyMsg.parentNode) { lapsList.removeChild(emptyMsg); }
+        var li = document.createElement('li');
+        var no = document.createElement('span');
+        no.className = 'lap-no';
+        no.textContent = 'ラップ ' + lapCount;
+        var t = document.createElement('span');
+        t.className = 'lap-time';
+        t.textContent = f.text;
+        li.appendChild(no);
+        li.appendChild(t);
+        lapsList.appendChild(li); // 時間順（記録順）に下へ追加
+      }
+
+      startStop.addEventListener('click', function () {
+        if (running) { stop(); } else { start(); }
+      });
+      lapBtn.addEventListener('click', function () {
+        if (running) { recordLap(); }
+      });
+      resetBtn.addEventListener('click', reset);
+
+      render();
+    })();
+  </script>
+</body>
+</html>
