@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ストップウォッチ</title>
+  <style>
+    /* ===== 全体の背景・中央寄せ ===== */
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #1e293b;
+      color: #f1f5f9;
+      font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: #94a3b8;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ===== 時間表示 ===== */
+    #display {
+      font-size: clamp(3rem, 15vw, 6rem);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums; /* 数字の幅を揃えてガタつきを防ぐ */
+      letter-spacing: 0.02em;
+      margin-bottom: 2rem;
+    }
+
+    /* ===== ボタン ===== */
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 0.75rem 1.75rem;
+      border: none;
+      border-radius: 0.6rem;
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.05s;
+      min-width: 100px;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    /* 使えないボタンは薄く表示して押せないようにする */
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #startBtn { background: #22c55e; } /* 緑 */
+    #stopBtn  { background: #ef4444; } /* 赤 */
+    #resetBtn { background: #64748b; } /* グレー */
+  </style>
+</head>
+<body>
+  <h1>STOPWATCH</h1>
+
+  <!-- 時間表示（分:秒.ミリ秒） -->
+  <div id="display">00:00.00</div>
+
+  <!-- 3つのボタン -->
+  <div class="buttons">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <button id="resetBtn" disabled>Reset</button>
+  </div>
+
+  <script>
+    // ===== 画面の部品を取得 =====
+    const display  = document.getElementById('display');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn  = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // ===== 状態を覚えておく変数 =====
+    let intervalId = null;   // 画面更新の繰り返し処理のID（動作中かどうかの目印にもなる）
+    let startTime  = 0;      // 計測を開始した時刻
+    let elapsed    = 0;      // これまでに経過した合計時間（ミリ秒）。Stopした分を貯めておく
+
+    // ===== 経過時間を「分:秒.ミリ秒」の文字に変換する =====
+    function format(ms) {
+      const minutes      = Math.floor(ms / 60000);           // 分
+      const seconds      = Math.floor((ms % 60000) / 1000);  // 秒
+      const centiseconds = Math.floor((ms % 1000) / 10);     // 1/100秒（ミリ秒2桁）
+
+      const mm = String(minutes).padStart(2, '0');
+      const ss = String(seconds).padStart(2, '0');
+      const cs = String(centiseconds).padStart(2, '0');
+      return `${mm}:${ss}.${cs}`;
+    }
+
+    // ===== 画面の数字を今の経過時間で更新する =====
+    function render() {
+      const now = elapsed + (Date.now() - startTime);
+      display.textContent = format(now);
+    }
+
+    // ===== Start：計測を開始（または続きから再開）=====
+    function start() {
+      if (intervalId !== null) return; // すでに動作中なら二重に動かさない
+
+      startTime = Date.now();
+      intervalId = setInterval(render, 10); // 約10ミリ秒ごとに画面を更新
+
+      startBtn.disabled = true;
+      stopBtn.disabled  = false;
+      resetBtn.disabled = false;
+    }
+
+    // ===== Stop：計測を一時停止（時間は残す）=====
+    function stop() {
+      if (intervalId === null) return; // 止まっているなら何もしない
+
+      clearInterval(intervalId);
+      intervalId = null;
+      elapsed += Date.now() - startTime; // 経過分を貯めておく
+      render();
+
+      startBtn.disabled = false;
+      stopBtn.disabled  = true;
+      // Reset は押せるままにしておく
+    }
+
+    // ===== Reset：00:00.00 に戻す =====
+    function reset() {
+      clearInterval(intervalId);
+      intervalId = null;
+      elapsed    = 0;
+      display.textContent = format(0);
+
+      startBtn.disabled = false;
+      stopBtn.disabled  = true;
+      resetBtn.disabled = true;
+    }
+
+    // ===== ボタンとキーボード操作を関連づける =====
+    startBtn.addEventListener('click', start);
+    stopBtn.addEventListener('click', stop);
+    resetBtn.addEventListener('click', reset);
+  </script>
+</body>
+</html>
